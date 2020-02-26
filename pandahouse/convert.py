@@ -1,4 +1,3 @@
-import csv
 import sys
 import numpy as np
 import pandas as pd
@@ -86,14 +85,8 @@ def normalize(df, index=True):
 
 def to_csv(df):
     data = df.to_csv(
-        header=False,
-        index=False,
-        encoding="utf-8",
-        na_rep="\\N",
-        quoting=csv.QUOTE_NONNUMERIC,
-        escapechar="\\",
+        header=False, index=False, encoding="utf-8", na_rep="\\N", sep=",",
     )
-    data = data.replace('"\\N"', "\\N")  # Unquote null values
     if PY3:
         return data.encode("utf-8")
     else:
