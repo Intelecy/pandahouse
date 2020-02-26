@@ -83,6 +83,23 @@ def xyz2(connection, database):
         execute(drop, connection=connection)
 
 
+@pytest.yield_fixture
+def nullable(connection, database):
+    create = """
+        CREATE TABLE IF NOT EXISTS {db}.nullable (
+            A Int64,
+            B Nullable(Float32),
+            C Nullable(Int32),
+            D Date
+        ) ENGINE = MergeTree(D, (A), 8192)
+    """
+    drop = "DROP TABLE IF EXISTS {db}.nullable"
+    try:
+        yield execute(create, connection=connection)
+    finally:
+        execute(drop, connection=connection)
+
+
 def test_insert(df, decimals, connection):
     affected_rows = to_clickhouse(df, table="decimals", connection=connection)
     assert affected_rows == 100
@@ -102,6 +119,26 @@ def test_query(df, decimals, connection):
         "SELECT B, C FROM {db}.decimals", index_col="B", connection=connection
     )
     assert df_.shape == (100, 1)
+
+
+def test_nullable(connection, nullable):
+    df = pd.DataFrame(
+        {
+            "A": np.arange(5, dtype="int64"),
+            "B": np.array([0.0, np.nan, 2.2, 3.3, 4.4], dtype="float32"),
+            "C": pd.array([0, 1, None, 3, 4], dtype=pd.Int32Dtype()),
+            "D": pd.Timestamp("2017-05-03"),
+        }
+    )
+    df = df.set_index("A")
+
+    affected_rows = to_clickhouse(df, table="nullable", connection=connection)
+    assert affected_rows == 5
+
+    df_ = read_clickhouse(
+        "SELECT A, B, C, D FROM {db}.nullable", index_col="A", connection=connection
+    )
+    assert_frame_equal(df_, df)
 
 
 def test_read_special_strings(connection, xyz):
