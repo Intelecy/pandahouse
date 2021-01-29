@@ -28,7 +28,15 @@ def insertion(df, table, index=True):
     return query, df
 
 
-def read_clickhouse(query, tables=None, index=True, connection=None, **kwargs):
+def read_clickhouse(
+    query,
+    tables=None,
+    index=True,
+    connection=None,
+    query_id_prefix=None,
+    quota_key=None,
+    **kwargs
+):
     """Reads clickhouse query to pandas dataframe
 
     Parameters
@@ -53,7 +61,14 @@ def read_clickhouse(query, tables=None, index=True, connection=None, **kwargs):
     Additional keyword arguments passed to `pandas.read_csv`
     """
     query, external = selection(query, tables=tables, index=index)
-    lines = execute(query, external=external, stream=True, connection=connection)
+    lines = execute(
+        query,
+        external=external,
+        stream=True,
+        connection=connection,
+        query_id_prefix=query_id_prefix,
+        quota_key=quota_key,
+    )
     return to_dataframe(lines, **kwargs)
 
 
